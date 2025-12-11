@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Element Clip</title>
   <link rel="stylesheet" href="sidepanel.css">
 </head>
+
 <body>
   <div class="container">
     <!-- ヘッダー -->
@@ -88,9 +90,11 @@
       <div class="form-group">
         <label for="variable-selector">CSSセレクタ</label>
         <div class="selector-group">
-          <input type="text" id="variable-selector" class="form-input" placeholder="例: input#username" readonly>
+          <textarea id="variable-selector" class="form-textarea" placeholder="例: input#username" rows="3"
+            readonly></textarea>
           <button id="btn-select-element" class="btn btn-secondary">要素を選択</button>
         </div>
+        <div class="selector-hint">セレクタを手動で編集することもできます</div>
       </div>
       <div class="form-group">
         <label for="variable-extract-type">抽出タイプ</label>
@@ -130,4 +134,5 @@
   <script src="utils.js"></script>
   <script src="sidepanel.js"></script>
 </body>
+
 </html>

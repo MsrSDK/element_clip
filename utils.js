@@ -3,7 +3,7 @@
 // ============================================
 
 /**
- * DOM要素から一意なCSSセレクタを生成
+ * DOM要素から一意なCSSセレクタを生成（最適化版）
  * @param {Element} element - 対象のDOM要素
  * @returns {string} CSSセレクタ
  */
@@ -12,43 +12,91 @@ function generateSelector(element) {
     return '';
   }
 
-  // IDがある場合は優先的に使用
+  // IDがある場合は優先的に使用（最もシンプル）
   if (element.id) {
-    return `#${element.id}`;
+    // IDが一意であることを確認
+    const idSelector = `#${CSS.escape(element.id)}`;
+    if (document.querySelectorAll(idSelector).length === 1) {
+      return idSelector;
+    }
   }
 
-  // パスを構築
+  // nameまたはaria-label属性がある場合はそれを使用
+  if (element.name) {
+    const nameSelector = `${element.tagName.toLowerCase()}[name="${CSS.escape(element.name)}"]`;
+    if (document.querySelectorAll(nameSelector).length === 1) {
+      return nameSelector;
+    }
+  }
+
+  // シンプルなクラスセレクタを試す
+  if (element.className && typeof element.className === 'string') {
+    const classes = element.className.trim().split(/\s+/).filter(c => c && !c.match(/^(active|hover|focus|disabled|selected)$/i));
+
+    // 単一クラスで一意になるか試す
+    for (const cls of classes) {
+      const classSelector = `${element.tagName.toLowerCase()}.${CSS.escape(cls)}`;
+      if (document.querySelectorAll(classSelector).length === 1) {
+        return classSelector;
+      }
+    }
+
+    // 複数クラスの組み合わせで試す（最大2つまで）
+    if (classes.length > 1) {
+      const combinedSelector = `${element.tagName.toLowerCase()}.${classes.slice(0, 2).map(c => CSS.escape(c)).join('.')}`;
+      if (document.querySelectorAll(combinedSelector).length === 1) {
+        return combinedSelector;
+      }
+    }
+  }
+
+  // 親要素を含めた最小限のパスを構築
   const path = [];
   let current = element;
+  let depth = 0;
+  const maxDepth = 3; // 最大3階層まで
 
-  while (current && current !== document.body) {
+  while (current && current !== document.body && depth < maxDepth) {
     let selector = current.tagName.toLowerCase();
-    
-    // クラスがある場合は追加
-    if (current.className && typeof current.className === 'string') {
-      const classes = current.className.trim().split(/\s+/).filter(c => c);
+
+    // ID、name、クラスを優先的に使用
+    if (current.id) {
+      selector = `#${CSS.escape(current.id)}`;
+      path.unshift(selector);
+      break; // IDが見つかったら終了
+    } else if (current.name) {
+      selector += `[name="${CSS.escape(current.name)}"]`;
+    } else if (current.className && typeof current.className === 'string') {
+      const classes = current.className.trim().split(/\s+/).filter(c => c && !c.match(/^(active|hover|focus)$/i));
       if (classes.length > 0) {
-        selector += '.' + classes.join('.');
+        selector += `.${CSS.escape(classes[0])}`; // 最初のクラスだけ使用
       }
     }
-    
-    // 兄弟要素の中での位置を特定
+
+    // 兄弟要素の中での位置（同じタグの場合のみ）
     if (current.parentElement) {
       const siblings = Array.from(current.parentElement.children);
-      const sameTagSiblings = siblings.filter(sibling => 
-        sibling.tagName === current.tagName
-      );
-      
+      const sameTagSiblings = siblings.filter(sibling => sibling.tagName === current.tagName);
+
       if (sameTagSiblings.length > 1) {
-        const index = sameTagSiblings.indexOf(current) + 1;
-        selector += `:nth-of-type(${index})`;
+        const index = sameTagSiblings.indexOf(current);
+        selector += `:nth-of-type(${index + 1})`;
       }
     }
-    
+
     path.unshift(selector);
+
+    // このセレクタで一意になるかチェック
+    const currentPath = path.join(' > ');
+    if (document.querySelectorAll(currentPath).length === 1) {
+      return currentPath;
+    }
+
     current = current.parentElement;
+    depth++;
   }
 
+  // 最終的に生成されたパスを返す
   return path.join(' > ');
 }
 
@@ -68,22 +116,22 @@ function extractValue(element, extractType = 'value', attributeName = null) {
     case 'value':
       // input, textarea, selectなどのvalue属性
       return element.value || '';
-    
+
     case 'text':
       // テキストコンテンツ
       return element.textContent?.trim() || '';
-    
+
     case 'attribute':
       // 指定された属性
       if (attributeName) {
         return element.getAttribute(attributeName) || '';
       }
       return '';
-    
+
     case 'innerHTML':
       // HTML内容
       return element.innerHTML || '';
-    
+
     default:
       // デフォルトはvalueかtextContent
       return element.value || element.textContent?.trim() || '';
@@ -131,14 +179,14 @@ function pasteValue(element, value) {
       element.dispatchEvent(new Event('change', { bubbles: true }));
       return true;
     }
-    
+
     // contenteditable要素の場合
     if (element.contentEditable === 'true') {
       element.textContent = value;
       element.dispatchEvent(new Event('input', { bubbles: true }));
       return true;
     }
-    
+
     // その他の要素の場合はtextContentに設定
     element.textContent = value;
     return true;
@@ -173,7 +221,7 @@ function pasteValueBySelector(selector, value) {
  * @returns {string} UUID
  */
 function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -200,7 +248,7 @@ function formatTimestamp(timestamp) {
   const day = String(date.getDate()).padStart(2, '0');
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-  
+
   return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 

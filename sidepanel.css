@@ -350,7 +350,8 @@ body {
 }
 
 .form-input,
-.form-select {
+.form-select,
+.form-textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #ddd;
@@ -360,8 +361,16 @@ body {
   transition: border-color 0.2s ease;
 }
 
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: 'Courier New', monospace;
+  line-height: 1.5;
+}
+
 .form-input:focus,
-.form-select:focus {
+.form-select:focus,
+.form-textarea:focus {
   outline: none;
   border-color: #4CAF50;
 }
@@ -369,10 +378,19 @@ body {
 .selector-group {
   display: flex;
   gap: 8px;
+  align-items: flex-start;
 }
 
-.selector-group .form-input {
+.selector-group .form-input,
+.selector-group .form-textarea {
   flex: 1;
+}
+
+.selector-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
 }
 
 .dialog-actions {
@@ -387,7 +405,7 @@ body {
   .action-group {
     grid-template-columns: 1fr;
   }
-  
+
   .dialog {
     width: 95%;
     padding: 20px;
