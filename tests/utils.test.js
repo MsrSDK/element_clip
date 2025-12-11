@@ -3,6 +3,69 @@
 // ============================================
 
 function runAllTests() {
+    // 統合テスト - utils.jsの読み込み確認
+    const integrationSection = createSection('統合テスト - utils.js読み込み確認');
+
+    runTest(integrationSection, 'utils.jsが正しく読み込まれている', () => {
+        assert(typeof generateSelector !== 'undefined', 'generateSelector関数が定義されているべき');
+        assert(typeof extractValue !== 'undefined', 'extractValue関数が定義されているべき');
+        assert(typeof pasteValue !== 'undefined', 'pasteValue関数が定義されているべき');
+        assert(typeof generateUUID !== 'undefined', 'generateUUID関数が定義されているべき');
+    });
+
+    runTest(integrationSection, 'すべてのユーティリティ関数が呼び出し可能', () => {
+        assert(typeof generateSelector === 'function', 'generateSelectorは関数であるべき');
+        assert(typeof extractValue === 'function', 'extractValueは関数であるべき');
+        assert(typeof pasteValue === 'function', 'pasteValueは関数であるべき');
+        assert(typeof extractValueBySelector === 'function', 'extractValueBySelectorは関数であるべき');
+        assert(typeof pasteValueBySelector === 'function', 'pasteValueBySelectorは関数であるべき');
+        assert(typeof generateUUID === 'function', 'generateUUIDは関数であるべき');
+        assert(typeof getCurrentTimestamp === 'function', 'getCurrentTimestampは関数であるべき');
+        assert(typeof formatTimestamp === 'function', 'formatTimestampは関数であるべき');
+    });
+
+    runTest(integrationSection, 'content.jsで必要な関数が利用可能', () => {
+        // content.jsで使用される主要な関数をテスト
+        const testDiv = document.createElement('div');
+        testDiv.id = 'integration-test';
+        document.body.appendChild(testDiv);
+
+        // generateSelectorが動作するか
+        const selector = generateSelector(testDiv);
+        assert(selector, 'generateSelectorが値を返すべき');
+        assert(selector.includes('integration-test'), 'セレクタにIDが含まれるべき');
+
+        // extractValueBySelectorが動作するか
+        testDiv.textContent = 'test content';
+        const value = extractValueBySelector('#integration-test', 'text');
+        assertEqual(value, 'test content', 'extractValueBySelectorが正しく動作するべき');
+
+        // pasteValueBySelectorが動作するか
+        const input = document.createElement('input');
+        input.id = 'integration-test-input';
+        document.body.appendChild(input);
+
+        const success = pasteValueBySelector('#integration-test-input', 'pasted value');
+        assert(success, 'pasteValueBySelectorが成功するべき');
+        assertEqual(input.value, 'pasted value', '値が正しく貼り付けられるべき');
+
+        // クリーンアップ
+        document.body.removeChild(testDiv);
+        document.body.removeChild(input);
+    });
+
+    runTest(integrationSection, '関数のエラーハンドリング', () => {
+        // null要素に対するエラーハンドリング
+        const selector1 = generateSelector(null);
+        assertEqual(selector1, '', 'nullに対しては空文字列を返すべき');
+
+        const value1 = extractValueBySelector('#non-existent-element-12345', 'value');
+        assertEqual(value1, '', '存在しない要素からの抽出は空文字列を返すべき');
+
+        const success1 = pasteValueBySelector('#non-existent-element-12345', 'test');
+        assertEqual(success1, false, '存在しない要素への貼り付けは失敗するべき');
+    });
+
     // CSSセレクタ生成のテスト
     const selectorSection = createSection('CSSセレクタ生成テスト');
 
