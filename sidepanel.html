@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Element Clip</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="container">
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1 class="title">Element Clip</h1>
+      <p class="subtitle">DOM要素コピペツール</p>
+    </header>
+
+    <!-- アクションボタン -->
+    <section class="actions">
+      <button id="btn-add-variable" class="btn btn-primary">
+        <span class="icon">➕</span>
+        新しい変数を追加
+      </button>
+      <div class="action-group">
+        <button id="btn-extract-all" class="btn btn-success">
+          <span class="icon">📥</span>
+          すべて抽出
+        </button>
+        <button id="btn-paste-all" class="btn btn-info">
+          <span class="icon">📤</span>
+          すべて貼り付け
+        </button>
+        <button id="btn-save-set" class="btn btn-warning">
+          <span class="icon">💾</span>
+          すべて保存
+        </button>
+      </div>
+    </section>
+
+    <!-- 変数リスト -->
+    <section class="variables-section">
+      <h2 class="section-title">変数一覧</h2>
+      <div id="variables-list" class="variables-list">
+        <!-- 変数アイテムが動的に追加される -->
+      </div>
+      <div id="empty-state" class="empty-state">
+        <p>まだ変数が登録されていません</p>
+        <p class="empty-hint">「新しい変数を追加」ボタンから変数を作成してください</p>
+      </div>
+    </section>
+
+    <!-- セット管理 -->
+    <section class="sets-section">
+      <h2 class="section-title">保存済みセット</h2>
+      <div id="sets-list" class="sets-list">
+        <!-- セットアイテムが動的に追加される -->
+      </div>
+      <div id="sets-empty-state" class="empty-state">
+        <p>保存済みセットはありません</p>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section class="settings-section">
+      <h2 class="section-title">設定</h2>
+      <div class="settings-item">
+        <label>
+          <input type="checkbox" id="setting-auto-highlight" checked>
+          要素選択時に自動ハイライト
+        </label>
+      </div>
+      <div class="settings-item">
+        <label>
+          <input type="checkbox" id="setting-show-notifications" checked>
+          完了通知を表示
+        </label>
+      </div>
+    </section>
+  </div>
+
+  <!-- 変数追加/編集ダイアログ -->
+  <div id="variable-dialog" class="dialog-overlay">
+    <div class="dialog">
+      <h3 class="dialog-title">変数の設定</h3>
+      <div class="form-group">
+        <label for="variable-name">変数名</label>
+        <input type="text" id="variable-name" class="form-input" placeholder="例: ユーザー名">
+      </div>
+      <div class="form-group">
+        <label for="variable-selector">CSSセレクタ</label>
+        <div class="selector-group">
+          <input type="text" id="variable-selector" class="form-input" placeholder="例: input#username" readonly>
+          <button id="btn-select-element" class="btn btn-secondary">要素を選択</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="variable-extract-type">抽出タイプ</label>
+        <select id="variable-extract-type" class="form-select">
+          <option value="value">value (input/select)</option>
+          <option value="text">text (テキスト内容)</option>
+          <option value="attribute">attribute (属性値)</option>
+          <option value="innerHTML">innerHTML</option>
+        </select>
+      </div>
+      <div class="form-group" id="attribute-group" style="display: none;">
+        <label for="variable-attribute-name">属性名</label>
+        <input type="text" id="variable-attribute-name" class="form-input" placeholder="例: href, src">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-dialog-cancel" class="btn btn-secondary">キャンセル</button>
+        <button id="btn-dialog-save" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- セット保存ダイアログ -->
+  <div id="set-dialog" class="dialog-overlay">
+    <div class="dialog">
+      <h3 class="dialog-title">セットを保存</h3>
+      <div class="form-group">
+        <label for="set-name">セット名</label>
+        <input type="text" id="set-name" class="form-input" placeholder="例: プロフィールデータ 2025/12/11">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-set-cancel" class="btn btn-secondary">キャンセル</button>
+        <button id="btn-set-save" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="utils.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
