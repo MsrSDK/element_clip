@@ -187,10 +187,13 @@ function createVariableItem(variable) {
       </div>
     </div>
     <div class="variable-info">
-      <div class="variable-selector">${escapeHtml(variable.extractSelector)}</div>
+      <div class="selector-label">CSSセレクタ: <span class="edit-hint">(編集ボタンから変更可能)</span></div>
+      <div class="variable-selector-display">${escapeHtml(variable.extractSelector)}</div>
     </div>
-    <div class="variable-value ${variable.value ? '' : 'empty'}">
-      ${variable.value ? escapeHtml(variable.value) : '値が設定されていません'}
+    <div class="variable-value-container">
+      <div class="value-label">値:</div>
+      <textarea class="variable-value-edit" data-id="${variable.id}" placeholder="値が設定されていません">${variable.value ? escapeHtml(variable.value) : ''}</textarea>
+      <div class="value-hint">値を直接編集できます（自動保存）</div>
     </div>
   `;
 
@@ -199,6 +202,19 @@ function createVariableItem(variable) {
     div.querySelector('[data-action="paste"]').addEventListener('click', () => startPasteVariable(variable.id));
     div.querySelector('[data-action="edit"]').addEventListener('click', () => editVariable(variable.id));
     div.querySelector('[data-action="delete"]').addEventListener('click', () => deleteVariable(variable.id));
+
+    // 値の編集イベント
+    const valueTextarea = div.querySelector('.variable-value-edit');
+    valueTextarea.addEventListener('blur', (e) => {
+        updateVariableValue(variable.id, e.target.value);
+    });
+
+    // Ctrl+Enterで保存してフォーカス解除
+    valueTextarea.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.target.blur();
+        }
+    });
 
     return div;
 }
@@ -372,6 +388,19 @@ function deleteVariable(variableId) {
         variables = variables.filter(v => v.id !== variableId);
         saveData();
         renderVariables();
+    }
+}
+
+/**
+ * 変数の値を更新
+ */
+function updateVariableValue(variableId, newValue) {
+    const variable = variables.find(v => v.id === variableId);
+    if (variable) {
+        variable.value = newValue;
+        variable.lastExtracted = getCurrentTimestamp();
+        saveData();
+        console.log(`[Element Clip] Variable "${variable.name}" value updated manually`);
     }
 }
 

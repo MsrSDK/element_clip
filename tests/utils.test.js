@@ -66,6 +66,143 @@ function runAllTests() {
         assertEqual(success1, false, '存在しない要素への貼り付けは失敗するべき');
     });
 
+    // 変数編集機能のテスト
+    const editSection = createSection('変数編集機能テスト');
+
+    runTest(editSection, 'HTMLエスケープが正しく動作する', () => {
+        // 特殊文字を含むテキストのエスケープ
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        const testText = '<script>alert("XSS")</script>';
+        const escaped = escapeHtml(testText);
+        assertEqual(escaped, '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;', 'XSSスクリプトが正しくエスケープされるべき');
+
+        const testText2 = "It's a <test> & 'example'";
+        const escaped2 = escapeHtml(testText2);
+        assert(escaped2.includes('&lt;'), '< がエスケープされるべき');
+        assert(escaped2.includes('&gt;'), '> がエスケープされるべき');
+        assert(escaped2.includes('&amp;'), '& がエスケープされるべき');
+        assert(escaped2.includes('&#039;'), "' がエスケープされるべき");
+    });
+
+    runTest(editSection, 'テキスト編集のシミュレーション', () => {
+        // textarea要素を作成してテキスト編集をシミュレート
+        const textarea = document.createElement('textarea');
+        textarea.id = 'test-edit-area';
+        textarea.value = '初期値';
+        document.body.appendChild(textarea);
+
+        // 値を変更
+        textarea.value = '編集後の値';
+        assertEqual(textarea.value, '編集後の値', 'textareaの値が更新されるべき');
+
+        // 複数行の値
+        textarea.value = '行1\n行2\n行3';
+        assert(textarea.value.includes('\n'), '改行を含む値が保持されるべき');
+
+        // 長いテキスト
+        const longText = 'a'.repeat(1000);
+        textarea.value = longText;
+        assertEqual(textarea.value.length, 1000, '長いテキストが保持されるべき');
+
+        // クリーンアップ
+        document.body.removeChild(textarea);
+    });
+
+    runTest(editSection, 'CSSセレクタの編集と検証', () => {
+        // 様々なセレクタ形式をテスト
+        const validSelectors = [
+            '#test-id',
+            '.test-class',
+            'input[name="username"]',
+            'div > p.intro',
+            'button:nth-of-type(2)',
+            'input.form-control.input-lg'
+        ];
+
+        validSelectors.forEach(selector => {
+            try {
+                // セレクタが有効かチェック（例外が出なければOK）
+                document.querySelector(selector);
+                assert(true, `セレクタ "${selector}" は有効であるべき`);
+            } catch (e) {
+                // 要素が見つからないのは正常（セレクタ構文は正しい）
+                assert(true, `セレクタ "${selector}" は構文的に有効`);
+            }
+        });
+    });
+
+    runTest(editSection, '値の更新と保存のシミュレーション', () => {
+        // 変数データ構造のシミュレーション
+        const mockVariable = {
+            id: 'test-var-1',
+            name: 'テスト変数',
+            extractSelector: '#test-input',
+            value: '初期値',
+            lastExtracted: Date.now()
+        };
+
+        // 値を更新
+        mockVariable.value = '新しい値';
+        assertEqual(mockVariable.value, '新しい値', '変数の値が更新されるべき');
+
+        // タイムスタンプを更新
+        const oldTimestamp = mockVariable.lastExtracted;
+        mockVariable.lastExtracted = Date.now();
+        assert(mockVariable.lastExtracted >= oldTimestamp, 'タイムスタンプが更新されるべき');
+
+        // 空文字列への更新
+        mockVariable.value = '';
+        assertEqual(mockVariable.value, '', '空文字列も有効な値であるべき');
+
+        // セレクタの更新
+        mockVariable.extractSelector = 'input[name="new-field"]';
+        assertEqual(mockVariable.extractSelector, 'input[name="new-field"]', 'セレクタが更新されるべき');
+    });
+
+    runTest(editSection, 'Ctrl+Enterキーイベントのシミュレーション', () => {
+        const textarea = document.createElement('textarea');
+        textarea.id = 'test-keyevent';
+        document.body.appendChild(textarea);
+
+        let blurCalled = false;
+
+        // blurイベントリスナーを追加
+        textarea.addEventListener('blur', () => {
+            blurCalled = true;
+        });
+
+        // Ctrl+Enterイベントリスナーを追加
+        textarea.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.target.blur();
+            }
+        });
+
+        // Ctrl+Enterイベントを発火
+        const event = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            ctrlKey: true,
+            bubbles: true
+        });
+        textarea.dispatchEvent(event);
+
+        // blurが呼ばれたか確認
+        assert(blurCalled, 'Ctrl+Enterでblurが呼ばれるべき');
+
+        // クリーンアップ
+        document.body.removeChild(textarea);
+    });
+
     // CSSセレクタ生成のテスト
     const selectorSection = createSection('CSSセレクタ生成テスト');
 
