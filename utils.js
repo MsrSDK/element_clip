@@ -3,14 +3,36 @@
 // ============================================
 
 /**
- * DOM要素から一意なCSSセレクタを生成（最適化版）
+ * DOM要素から一意なCSSセレクタを生成（詳細度レベル対応版）
  * @param {Element} element - 対象のDOM要素
+ * @param {number} specificityLevel - 詳細度レベル (1-4, デフォルト: 1)
  * @returns {string} CSSセレクタ
  */
-function generateSelector(element) {
+function generateSelector(element, specificityLevel = 1) {
   if (!element || !(element instanceof Element)) {
     return '';
   }
+
+
+  // レベルに応じた設定（より詳細な設定に強化）
+  const config = {
+    1: { maxClasses: 3, maxDepth: 3, includeNth: true, includeType: true },    // 旧レベル3相当
+    2: { maxClasses: 5, maxDepth: 5, includeNth: true, includeType: true },    // より詳細
+    3: { maxClasses: 999, maxDepth: 8, includeNth: true, includeType: true },  // 非常に詳細
+    4: { maxClasses: 999, maxDepth: 999, includeNth: true, includeType: true } // 最大限（bodyまで）
+  };
+
+  const settings = config[specificityLevel] || config[1];
+  return generateSelectorWithSettings(element, settings);
+}
+
+/**
+ * 設定に基づいてセレクタを生成
+ * @param {Element} element - 対象のDOM要素
+ * @param {Object} settings - 生成設定
+ * @returns {string} CSSセレクタ
+ */
+function generateSelectorWithSettings(element, settings) {
 
   // IDがある場合は優先的に使用（最もシンプル）
   if (element.id) {
@@ -54,9 +76,8 @@ function generateSelector(element) {
   const path = [];
   let current = element;
   let depth = 0;
-  const maxDepth = 3; // 最大3階層まで
 
-  while (current && current !== document.body && depth < maxDepth) {
+  while (current && current !== document.body && depth < settings.maxDepth) {
     let selector = current.tagName.toLowerCase();
 
     // ID、name、クラスを優先的に使用
@@ -67,14 +88,15 @@ function generateSelector(element) {
     } else if (current.name) {
       selector += `[name="${CSS.escape(current.name)}"]`;
     } else if (current.className && typeof current.className === 'string') {
-      const classes = current.className.trim().split(/\s+/).filter(c => c && !c.match(/^(active|hover|focus)$/i));
-      if (classes.length > 0) {
-        selector += `.${CSS.escape(classes[0])}`; // 最初のクラスだけ使用
+      const classes = current.className.trim().split(/\s+/).filter(c => c && !c.match(/^(active|hover|focus|disabled|selected)$/i));
+      const classesToUse = classes.slice(0, settings.maxClasses);
+      if (classesToUse.length > 0) {
+        selector += '.' + classesToUse.map(c => CSS.escape(c)).join('.');
       }
     }
 
-    // 兄弟要素の中での位置（同じタグの場合のみ）
-    if (current.parentElement) {
+    // 兄弟要素の中での位置（設定に応じて）
+    if (settings.includeNth && current.parentElement) {
       const siblings = Array.from(current.parentElement.children);
       const sameTagSiblings = siblings.filter(sibling => sibling.tagName === current.tagName);
 

@@ -96,10 +96,23 @@
         <div class="selector-hint">セレクタを手動で編集することもできます</div>
       </div>
       <div class="form-group">
+        <label for="variable-specificity">セレクタ詳細度レベル</label>
+        <select id="variable-specificity" class="form-select">
+          <option value="1" selected>レベル1 - 標準（推奨）</option>
+          <option value="2">レベル2 - 詳細</option>
+          <option value="3">レベル3 - 非常に詳細</option>
+          <option value="4">レベル4 - 最大（完全パス）</option>
+        </select>
+        <div class="specificity-hint">
+          レベルが高いほど特定的なセレクタが生成されます。<br>
+          セレクタが機能しない場合は、レベルを上げてください。
+        </div>
+      </div>
+      <div class="form-group">
         <label for="variable-extract-type">抽出タイプ</label>
         <select id="variable-extract-type" class="form-select">
           <option value="value">value (input/select)</option>
-          <option value="text">text (テキスト内容)</option>
+          <option value="text" selected>text (テキスト内容)</option>
           <option value="attribute">attribute (属性値)</option>
           <option value="innerHTML">innerHTML</option>
         </select>

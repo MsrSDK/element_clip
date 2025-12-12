@@ -46,6 +46,19 @@ function loadData() {
         currentSetId = result.currentSetId || null;
         settings = result.settings || settings;
 
+        // マイグレーション: specificityLevelがない変数にデフォルト値を設定
+        let needsSave = false;
+        variables.forEach(v => {
+            if (v.specificityLevel === undefined) {
+                v.specificityLevel = 1;
+                needsSave = true;
+            }
+        });
+
+        if (needsSave) {
+            saveData();
+        }
+
         // UIに反映
         renderVariables();
         renderSets();
@@ -276,6 +289,7 @@ function openVariableDialog(variableId = null) {
         if (variable) {
             document.getElementById('variable-name').value = variable.name;
             document.getElementById('variable-selector').value = variable.extractSelector;
+            document.getElementById('variable-specificity').value = variable.specificityLevel || 1;
             document.getElementById('variable-extract-type').value = variable.extractType;
             document.getElementById('variable-attribute-name').value = variable.attributeName || '';
 
@@ -286,7 +300,8 @@ function openVariableDialog(variableId = null) {
         // 新規作成モード
         document.getElementById('variable-name').value = '';
         document.getElementById('variable-selector').value = '';
-        document.getElementById('variable-extract-type').value = 'value';
+        document.getElementById('variable-specificity').value = '1';
+        document.getElementById('variable-extract-type').value = 'text';
         document.getElementById('variable-attribute-name').value = '';
         document.getElementById('attribute-group').style.display = 'none';
     }
@@ -306,11 +321,14 @@ function closeVariableDialog() {
  * 要素選択を開始
  */
 function startSelectElement() {
+    const specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
+
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
                 action: 'startSelectExtract',
-                variableId: currentEditingVariableId || 'temp'
+                variableId: currentEditingVariableId || 'temp',
+                specificityLevel: specificityLevel
             });
         }
     });
@@ -336,6 +354,7 @@ function handleSelectCancelled() {
 function saveVariable() {
     const name = document.getElementById('variable-name').value.trim();
     const selector = document.getElementById('variable-selector').value.trim();
+    const specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
     const extractType = document.getElementById('variable-extract-type').value;
     const attributeName = document.getElementById('variable-attribute-name').value.trim();
 
@@ -350,6 +369,7 @@ function saveVariable() {
         if (variable) {
             variable.name = name;
             variable.extractSelector = selector;
+            variable.specificityLevel = specificityLevel;
             variable.extractType = extractType;
             variable.attributeName = extractType === 'attribute' ? attributeName : null;
         }
@@ -359,6 +379,7 @@ function saveVariable() {
             id: generateUUID(),
             name: name,
             extractSelector: selector,
+            specificityLevel: specificityLevel,
             extractType: extractType,
             attributeName: extractType === 'attribute' ? attributeName : null,
             value: '',

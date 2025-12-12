@@ -187,8 +187,9 @@ function handleClick(event) {
         return;
     }
 
-    // セレクタを生成
-    const selector = generateSelector(element);
+    // セレクタを生成（詳細度レベルを適用）
+    const specificityLevel = window.elementClipSpecificityLevel || 1;
+    const selector = generateSelector(element, specificityLevel);
 
     if (currentMode === 'select-extract') {
         // 抽出モード
@@ -285,6 +286,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     switch (request.action) {
         case 'startSelectExtract':
+            // specificityLevelを保存（デフォルト: 1）
+            if (request.specificityLevel !== undefined) {
+                window.elementClipSpecificityLevel = request.specificityLevel;
+            }
             startSelectMode('select-extract', request.variableId);
             sendResponse({ success: true });
             break;
