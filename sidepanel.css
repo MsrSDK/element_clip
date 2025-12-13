@@ -174,17 +174,47 @@ body {
 .variable-item {
   background: #f5f5f5;
   border-radius: 8px;
-  padding: 16px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 16px;
+  padding: 0;
+  /* paddingは内部のラッパーに移譲 */
+  display: flex;
+  /* ハンドルとコンテンツを横並び */
+  align-items: stretch;
+  overflow: hidden;
   transition: all 0.2s ease;
-  cursor: grab;
-  /* ドラッグ可能であることを示すカーソル */
+  /* カーソルはハンドルに移譲 */
 }
 
 .variable-item:active {
+  /* cursorなし */
+}
+
+.drag-handle {
+  width: 24px;
+  background: #e0e0e0;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #999;
+  font-size: 14px;
+}
+
+.drag-handle:active {
   cursor: grabbing;
+  background: #d0d0d0;
+}
+
+.drag-handle::after {
+  content: '⋮';
+  font-family: sans-serif;
+  font-weight: bold;
+}
+
+.variable-content-wrapper {
+  flex: 1;
+  padding: 16px;
+  min-width: 0;
 }
 
 .variable-item.dragging {
@@ -196,7 +226,6 @@ body {
 .variable-item.drag-over {
   border-top: 2px solid #2196F3;
   margin-top: 2px;
-  /* ボーダー分のズレを防ぐための調整 */
 }
 
 .variable-item:hover {

@@ -228,32 +228,40 @@ function renderVariables() {
 function createVariableItem(variable, index) {
     const div = document.createElement('div');
     div.className = 'variable-item';
-    div.draggable = true;
-    div.dataset.index = index; // 配列インデックスを保持
+    // div.draggable = true; // 親要素からは削除
+    div.dataset.index = index;
     div.dataset.id = variable.id;
 
-    // ドラッグ&ドロップイベントの設定
-    div.addEventListener('dragstart', handleDragStart);
+    // ドロップ受け入れはアイテム全体で
     div.addEventListener('dragover', handleDragOver);
     div.addEventListener('dragleave', handleDragLeave);
     div.addEventListener('drop', handleDrop);
-    div.addEventListener('dragend', handleDragEnd);
+
+    // HTML構造: ハンドル + コンテンツラッパー
     div.innerHTML = `
-    <div class="variable-header">
-      <div class="variable-name">${escapeHtml(variable.name)}</div>
-      <div class="variable-actions">
-        <button class="btn btn-small btn-success" data-action="extract" data-id="${variable.id}">抽出</button>
-        <button class="btn btn-small btn-info" data-action="paste" data-id="${variable.id}">貼付</button>
-        <button class="btn btn-small btn-secondary" data-action="edit" data-id="${variable.id}">編集</button>
-        <button class="btn btn-small btn-danger" data-action="delete" data-id="${variable.id}">削除</button>
-      </div>
+    <div class="drag-handle" draggable="true" title="ドラッグして並べ替え"></div>
+    <div class="variable-content-wrapper">
+        <div class="variable-header">
+          <div class="variable-name">${escapeHtml(variable.name)}</div>
+          <div class="variable-actions">
+            <button class="btn btn-small btn-success" data-action="extract" data-id="${variable.id}">抽出</button>
+            <button class="btn btn-small btn-info" data-action="paste" data-id="${variable.id}">貼付</button>
+            <button class="btn btn-small btn-secondary" data-action="edit" data-id="${variable.id}">編集</button>
+            <button class="btn btn-small btn-danger" data-action="delete" data-id="${variable.id}">削除</button>
+          </div>
+        </div>
+        <div class="variable-value-container">
+          <div class="value-label">値:</div>
+          <textarea class="variable-value-edit" data-id="${variable.id}" placeholder="値が設定されていません">${variable.value ? escapeHtml(variable.value) : ''}</textarea>
+          <div class="value-hint">値を直接編集できます（自動保存）</div>
+        </div>
     </div>
-    <div class="variable-value-container">
-      <div class="value-label">値:</div>
-      <textarea class="variable-value-edit" data-id="${variable.id}" placeholder="値が設定されていません">${variable.value ? escapeHtml(variable.value) : ''}</textarea>
-      <div class="value-hint">値を直接編集できます（自動保存）</div>
-    </div>
-  `;
+    `;
+
+    // ドラッグ開始/終了イベントはハンドルに追加
+    const handle = div.querySelector('.drag-handle');
+    handle.addEventListener('dragstart', handleDragStart);
+    handle.addEventListener('dragend', handleDragEnd);
 
     // イベントリスナーを追加
     div.querySelector('[data-action="extract"]').addEventListener('click', () => extractVariable(variable.id));
@@ -302,31 +310,38 @@ function renderSets() {
 function createSetItem(set, index) {
     const div = document.createElement('div');
     div.className = 'set-item';
-    div.draggable = true;
+    // div.draggable = true; 
     div.dataset.index = index;
     div.dataset.id = set.id;
 
-    // ドラッグ&ドロップイベントの設定
-    div.addEventListener('dragstart', handleSetDragStart);
+    // ドロップ受け入れはアイテム全体
     div.addEventListener('dragover', handleSetDragOver);
     div.addEventListener('dragleave', handleSetDragLeave);
     div.addEventListener('drop', handleSetDrop);
-    div.addEventListener('dragend', handleSetDragEnd);
+
     div.innerHTML = `
-    <div class="set-header">
-      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-        <input type="checkbox" class="set-checkbox" data-id="${set.id}">
-        <div class="set-name">${escapeHtml(set.name)}</div>
-      </div>
-      <div class="set-actions">
-        <button class="btn btn-small btn-info" data-action="load" data-id="${set.id}">読込</button>
-        <button class="btn btn-small btn-danger" data-action="delete" data-id="${set.id}">削除</button>
-      </div>
+    <div class="drag-handle" draggable="true" title="ドラッグして並べ替え"></div>
+    <div class="set-content-wrapper">
+        <div class="set-header">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            <input type="checkbox" class="set-checkbox" data-id="${set.id}">
+            <div class="set-name">${escapeHtml(set.name)}</div>
+          </div>
+          <div class="set-actions">
+            <button class="btn btn-small btn-info" data-action="load" data-id="${set.id}">読込</button>
+            <button class="btn btn-small btn-danger" data-action="delete" data-id="${set.id}">削除</button>
+          </div>
+        </div>
+        <div class="set-info">
+          ${formatTimestamp(set.createdAt)} - ${set.values.length}件の変数
+        </div>
     </div>
-    <div class="set-info">
-      ${formatTimestamp(set.createdAt)} - ${set.values.length}件の変数
-    </div>
-  `;
+    `;
+
+    // ドラッグイベントはハンドルに
+    const handle = div.querySelector('.drag-handle');
+    handle.addEventListener('dragstart', handleSetDragStart);
+    handle.addEventListener('dragend', handleSetDragEnd);
 
     // イベントリスナーを追加
     div.querySelector('[data-action="load"]').addEventListener('click', () => loadSet(set.id));
@@ -938,10 +953,18 @@ function escapeHtml(text) {
  * ドラッグ開始時
  */
 function handleDragStart(e) {
+    // ハンドル自体からイベントが発生する
+    const item = e.target.closest('.variable-item');
+    if (!item) return;
+
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', e.target.dataset.index);
-    e.dataTransfer.setData('type', 'variable'); // タイプ識別
-    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', item.dataset.index);
+    e.dataTransfer.setData('type', 'variable');
+
+    // アイテム全体にドラッグ中クラスを付与
+    // setTimeoutを使うとドラッグ中のゴースト画像には適用されず、元の要素に適用できる
+    // ここでは即時適用
+    item.classList.add('dragging');
 }
 
 /**
@@ -1003,7 +1026,8 @@ function handleDrop(e) {
  * ドラッグ終了時
  */
 function handleDragEnd(e) {
-    e.target.classList.remove('dragging');
+    const item = e.target.closest('.variable-item');
+    if (item) item.classList.remove('dragging');
 
     // すべてのdrag-overクラスを削除（念のため）
     document.querySelectorAll('.variable-item').forEach(item => {
@@ -1017,10 +1041,13 @@ console.log('[Element Clip] Side panel script loaded');
  * セットのドラッグ開始時
  */
 function handleSetDragStart(e) {
+    const item = e.target.closest('.set-item');
+    if (!item) return;
+
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', e.target.dataset.index);
-    e.dataTransfer.setData('type', 'set'); // タイプを識別
-    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', item.dataset.index);
+    e.dataTransfer.setData('type', 'set');
+    item.classList.add('dragging');
 }
 
 /**
@@ -1082,7 +1109,9 @@ function handleSetDrop(e) {
  * セットのドラッグ終了時
  */
 function handleSetDragEnd(e) {
-    e.target.classList.remove('dragging');
+    const item = e.target.closest('.set-item');
+    if (item) item.classList.remove('dragging');
+
     document.querySelectorAll('.set-item').forEach(item => {
         item.classList.remove('drag-over');
     });
