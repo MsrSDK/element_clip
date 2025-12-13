@@ -16,6 +16,9 @@ let settings = {
     showNotifications: true
 };
 
+// 選択ターゲットの状態管理 ('extract' or 'paste')
+let selectingTarget = 'extract';
+
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
@@ -87,23 +90,30 @@ function setupEventListeners() {
         openVariableDialog();
     });
 
-    // すべて抽出ボタン
+    // 一括抽出ボタン
     document.getElementById('btn-extract-all').addEventListener('click', () => {
         extractAllVariables();
     });
 
-    // すべて貼り付けボタン
+    // 一括貼り付けボタン
     document.getElementById('btn-paste-all').addEventListener('click', () => {
         pasteAllVariables();
     });
 
-    // すべて保存ボタン
+    // 変数セット保存ボタン
     document.getElementById('btn-save-set').addEventListener('click', () => {
         openSetDialog();
     });
 
     // 変数ダイアログ
     document.getElementById('btn-select-element').addEventListener('click', () => {
+        selectingTarget = 'extract';
+        startSelectElement();
+    });
+
+    // 貼り付け先要素選択ボタン
+    document.getElementById('btn-select-paste-element').addEventListener('click', () => {
+        selectingTarget = 'paste';
         startSelectElement();
     });
 
@@ -199,10 +209,6 @@ function createVariableItem(variable) {
         <button class="btn btn-small btn-danger" data-action="delete" data-id="${variable.id}">削除</button>
       </div>
     </div>
-    <div class="variable-info">
-      <div class="selector-label">CSSセレクタ: <span class="edit-hint">(編集ボタンから変更可能)</span></div>
-      <div class="variable-selector-display">${escapeHtml(variable.extractSelector)}</div>
-    </div>
     <div class="variable-value-container">
       <div class="value-label">値:</div>
       <textarea class="variable-value-edit" data-id="${variable.id}" placeholder="値が設定されていません">${variable.value ? escapeHtml(variable.value) : ''}</textarea>
@@ -289,6 +295,7 @@ function openVariableDialog(variableId = null) {
         if (variable) {
             document.getElementById('variable-name').value = variable.name;
             document.getElementById('variable-selector').value = variable.extractSelector;
+            document.getElementById('variable-paste-selector').value = variable.pasteSelector || '';
             document.getElementById('variable-specificity').value = variable.specificityLevel || 1;
             document.getElementById('variable-extract-type').value = variable.extractType;
             document.getElementById('variable-attribute-name').value = variable.attributeName || '';
@@ -300,6 +307,7 @@ function openVariableDialog(variableId = null) {
         // 新規作成モード
         document.getElementById('variable-name').value = '';
         document.getElementById('variable-selector').value = '';
+        document.getElementById('variable-paste-selector').value = '';
         document.getElementById('variable-specificity').value = '1';
         document.getElementById('variable-extract-type').value = 'text';
         document.getElementById('variable-attribute-name').value = '';
@@ -338,7 +346,11 @@ function startSelectElement() {
  * セレクタが選択された時の処理
  */
 function handleSelectorSelected(selector, variableId) {
-    document.getElementById('variable-selector').value = selector;
+    if (selectingTarget === 'extract') {
+        document.getElementById('variable-selector').value = selector;
+    } else {
+        document.getElementById('variable-paste-selector').value = selector;
+    }
 }
 
 /**
@@ -354,12 +366,13 @@ function handleSelectCancelled() {
 function saveVariable() {
     const name = document.getElementById('variable-name').value.trim();
     const selector = document.getElementById('variable-selector').value.trim();
+    const pasteSelector = document.getElementById('variable-paste-selector').value.trim();
     const specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
     const extractType = document.getElementById('variable-extract-type').value;
     const attributeName = document.getElementById('variable-attribute-name').value.trim();
 
     if (!name || !selector) {
-        alert('変数名とCSSセレクタは必須です');
+        alert('変数名と抽出元CSSセレクタは必須です');
         return;
     }
 
@@ -369,6 +382,7 @@ function saveVariable() {
         if (variable) {
             variable.name = name;
             variable.extractSelector = selector;
+            variable.pasteSelector = pasteSelector;
             variable.specificityLevel = specificityLevel;
             variable.extractType = extractType;
             variable.attributeName = extractType === 'attribute' ? attributeName : null;
@@ -379,6 +393,7 @@ function saveVariable() {
             id: generateUUID(),
             name: name,
             extractSelector: selector,
+            pasteSelector: pasteSelector,
             specificityLevel: specificityLevel,
             extractType: extractType,
             attributeName: extractType === 'attribute' ? attributeName : null,
@@ -501,14 +516,40 @@ function startPasteVariable(variableId) {
         return;
     }
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, {
-                action: 'startSelectPaste',
-                variableId: variableId
-            });
-        }
-    });
+    // 貼り付け先セレクタが設定されている場合は、それを使用して直接貼り付け
+    if (variable.pasteSelector) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    action: 'pasteValue',
+                    selector: variable.pasteSelector,
+                    value: variable.value
+                }, (response) => {
+                    if (response && response.success) {
+                        console.log(`[Element Clip] Pasted value to ${variable.pasteSelector}`);
+                    } else {
+                        // 失敗した場合や要素が見つからない場合は選択モードに移行
+                        if (confirm('指定された貼り付け先要素が見つかりませんでした。手動で要素を選択して貼り付けますか？')) {
+                            chrome.tabs.sendMessage(tabs[0].id, {
+                                action: 'startSelectPaste',
+                                variableId: variableId
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    } else {
+        // 貼り付け先セレクタがない場合は、従来通り選択モードを開始
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    action: 'startSelectPaste',
+                    variableId: variableId
+                });
+            }
+        });
+    }
 }
 
 /**

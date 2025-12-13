@@ -13,34 +13,36 @@
     <!-- ヘッダー -->
     <header class="header">
       <h1 class="title">Element Clip</h1>
-      <p class="subtitle">DOM要素コピペツール</p>
     </header>
 
-    <!-- アクションボタン -->
-    <section class="actions">
-      <button id="btn-add-variable" class="btn btn-primary">
-        <span class="icon">➕</span>
-        新しい変数を追加
-      </button>
-      <div class="action-group">
-        <button id="btn-extract-all" class="btn btn-success">
-          <span class="icon">📥</span>
-          すべて抽出
-        </button>
-        <button id="btn-paste-all" class="btn btn-info">
-          <span class="icon">📤</span>
-          すべて貼り付け
-        </button>
-        <button id="btn-save-set" class="btn btn-warning">
-          <span class="icon">💾</span>
-          すべて保存
-        </button>
-      </div>
-    </section>
+
 
     <!-- 変数リスト -->
     <section class="variables-section">
       <h2 class="section-title">変数一覧</h2>
+
+      <!-- アクションボタン -->
+      <section class="actions">
+        <button id="btn-add-variable" class="btn btn-primary">
+          <span class="icon">➕</span>
+          新しい変数を追加
+        </button>
+        <div class="action-group">
+          <button id="btn-extract-all" class="btn btn-success">
+            <span class="icon">📥</span>
+            一括抽出
+          </button>
+          <button id="btn-paste-all" class="btn btn-info">
+            <span class="icon">📤</span>
+            一括貼り付け
+          </button>
+          <button id="btn-save-set" class="btn btn-warning">
+            <span class="icon">💾</span>
+            変数セット保存
+          </button>
+        </div>
+      </section>
+
       <div id="variables-list" class="variables-list">
         <!-- 変数アイテムが動的に追加される -->
       </div>
@@ -87,11 +89,12 @@
         <label for="variable-name">変数名</label>
         <input type="text" id="variable-name" class="form-input" placeholder="例: ユーザー名">
       </div>
+      <div class="section-title">抽出設定</div>
       <div class="form-group">
-        <label for="variable-selector">CSSセレクタ</label>
+        <label for="variable-selector">抽出元CSSセレクタ</label>
         <div class="selector-group">
-          <textarea id="variable-selector" class="form-textarea" placeholder="例: input#username" rows="3"></textarea>
-          <button id="btn-select-element" class="btn btn-secondary">要素を選択</button>
+          <textarea id="variable-selector" class="form-textarea" placeholder="例: input#username" rows="2"></textarea>
+          <button id="btn-select-element" class="btn btn-secondary" data-target="extract">要素を選択</button>
         </div>
         <div class="selector-hint">セレクタを手動で編集することもできます</div>
       </div>
@@ -104,8 +107,7 @@
           <option value="4">レベル4 - 最大（完全パス）</option>
         </select>
         <div class="specificity-hint">
-          レベルが高いほど特定的なセレクタが生成されます。<br>
-          セレクタが機能しない場合は、レベルを上げてください。
+          レベルが高いほど特定的なセレクタが生成されます。
         </div>
       </div>
       <div class="form-group">
@@ -120,6 +122,19 @@
       <div class="form-group" id="attribute-group" style="display: none;">
         <label for="variable-attribute-name">属性名</label>
         <input type="text" id="variable-attribute-name" class="form-input" placeholder="例: href, src">
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="section-title">貼り付け設定</div>
+      <div class="form-group">
+        <label for="variable-paste-selector">貼り付け先CSSセレクタ（任意）</label>
+        <div class="selector-group">
+          <textarea id="variable-paste-selector" class="form-textarea" placeholder="例: input#dest-input"
+            rows="2"></textarea>
+          <button id="btn-select-paste-element" class="btn btn-secondary" data-target="paste">要素を選択</button>
+        </div>
+        <div class="selector-hint">未設定の場合は、貼付ボタン押下時に要素を選択します</div>
       </div>
       <div class="dialog-actions">
         <button id="btn-dialog-cancel" class="btn btn-secondary">キャンセル</button>
