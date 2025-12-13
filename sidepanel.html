@@ -54,7 +54,12 @@
 
     <!-- セット管理 -->
     <section class="sets-section">
-      <h2 class="section-title">保存済みセット</h2>
+      <div class="section-header">
+        <h2 class="section-title" style="margin-bottom: 0;">保存済みセット</h2>
+        <button id="btn-delete-selected-sets" class="btn btn-small btn-danger" style="display: none;">
+          <span class="icon">🗑️</span> 選択削除
+        </button>
+      </div>
       <div id="sets-list" class="sets-list">
         <!-- セットアイテムが動的に追加される -->
       </div>
@@ -76,6 +81,12 @@
         <label>
           <input type="checkbox" id="setting-show-notifications" checked>
           完了通知を表示
+        </label>
+      </div>
+      <div class="settings-item">
+        <label>
+          <input type="checkbox" id="setting-clear-values">
+          セット保存後に変数の値をクリア
         </label>
       </div>
     </section>

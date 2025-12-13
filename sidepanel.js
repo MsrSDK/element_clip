@@ -13,7 +13,8 @@ let savedSets = [];
 let currentSetId = null;
 let settings = {
     autoHighlight: true,
-    showNotifications: true
+    showNotifications: true,
+    clearValuesAfterSave: false
 };
 
 // 選択ターゲットの状態管理 ('extract' or 'paste')
@@ -47,7 +48,16 @@ function loadData() {
         variables = result.variables || [];
         savedSets = result.savedSets || [];
         currentSetId = result.currentSetId || null;
-        settings = result.settings || settings;
+
+        // 設定をマージ（新しい設定項目のため）
+        if (result.settings) {
+            settings = { ...settings, ...result.settings };
+        }
+
+        // UIに反映
+        document.getElementById('setting-auto-highlight').checked = settings.autoHighlight;
+        document.getElementById('setting-show-notifications').checked = settings.showNotifications;
+        document.getElementById('setting-clear-values').checked = settings.clearValuesAfterSave;
 
         // マイグレーション: specificityLevelがない変数にデフォルト値を設定
         let needsSave = false;
@@ -139,6 +149,11 @@ function setupEventListeners() {
         saveSet();
     });
 
+    // セット一括削除ボタン
+    document.getElementById('btn-delete-selected-sets').addEventListener('click', () => {
+        deleteSelectedSets();
+    });
+
     // 設定
     document.getElementById('setting-auto-highlight').addEventListener('change', (e) => {
         settings.autoHighlight = e.target.checked;
@@ -147,6 +162,11 @@ function setupEventListeners() {
 
     document.getElementById('setting-show-notifications').addEventListener('change', (e) => {
         settings.showNotifications = e.target.checked;
+        saveData();
+    });
+
+    document.getElementById('setting-clear-values').addEventListener('change', (e) => {
+        settings.clearValuesAfterSave = e.target.checked;
         saveData();
     });
 }
@@ -285,7 +305,10 @@ function createSetItem(set, index) {
     div.addEventListener('dragend', handleSetDragEnd);
     div.innerHTML = `
     <div class="set-header">
-      <div class="set-name">${escapeHtml(set.name)}</div>
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+        <input type="checkbox" class="set-checkbox" data-id="${set.id}">
+        <div class="set-name">${escapeHtml(set.name)}</div>
+      </div>
       <div class="set-actions">
         <button class="btn btn-small btn-info" data-action="load" data-id="${set.id}">読込</button>
         <button class="btn btn-small btn-danger" data-action="delete" data-id="${set.id}">削除</button>
@@ -299,6 +322,11 @@ function createSetItem(set, index) {
     // イベントリスナーを追加
     div.querySelector('[data-action="load"]').addEventListener('click', () => loadSet(set.id));
     div.querySelector('[data-action="delete"]').addEventListener('click', () => deleteSet(set.id));
+
+    // チェックボックスのイベント
+    const checkbox = div.querySelector('.set-checkbox');
+    checkbox.addEventListener('change', updateDeleteButtonState);
+    checkbox.addEventListener('mousedown', (e) => e.stopPropagation()); // ドラッグ防止
 
     return div;
 }
@@ -674,9 +702,57 @@ function saveSet() {
     savedSets.unshift(newSet); // 先頭に追加
     currentSetId = newSet.id;
 
+    // 設定に応じて値をクリア
+    if (settings.clearValuesAfterSave) {
+        variables.forEach(v => {
+            v.value = '';
+            v.lastExtracted = null;
+        });
+        renderVariables(); // 変数リスト再描画
+    }
+
     saveData();
     renderSets();
     closeSetDialog();
+}
+
+/**
+ * 選択されたセットを一括削除
+ */
+function deleteSelectedSets() {
+    const checkboxes = document.querySelectorAll('.set-checkbox:checked');
+    if (checkboxes.length === 0) return;
+
+    if (!confirm(`${checkboxes.length}個のセットを削除してもよろしいですか？`)) {
+        return;
+    }
+
+    const idsToDelete = Array.from(checkboxes).map(cb => cb.dataset.id);
+    savedSets = savedSets.filter(set => !idsToDelete.includes(set.id));
+
+    // ボタンを非表示に戻す
+    const deleteBtn = document.getElementById('btn-delete-selected-sets');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    saveData();
+    renderSets();
+}
+
+/**
+ * 削除ボタンの状態更新
+ */
+function updateDeleteButtonState() {
+    const checkedCount = document.querySelectorAll('.set-checkbox:checked').length;
+    const deleteBtn = document.getElementById('btn-delete-selected-sets');
+
+    if (deleteBtn) {
+        if (checkedCount > 0) {
+            deleteBtn.style.display = 'flex';
+            deleteBtn.innerHTML = `<span class="icon">🗑️</span> 選択削除 (${checkedCount})`;
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+    }
 }
 
 /**
@@ -686,20 +762,36 @@ function loadSet(setId) {
     const set = savedSets.find(s => s.id === setId);
     if (!set) return;
 
-    if (confirm(`セット「${set.name}」を読み込みますか？現在の値は上書きされます。`)) {
-        set.values.forEach(savedValue => {
-            const variable = variables.find(v => v.id === savedValue.variableId);
-            if (variable) {
-                variable.value = savedValue.value;
-            }
-        });
+    // 現在の変数に対応する値をセット
+    // セットに含まれていない変数の値は維持するかクリアするか？
+    // ここでは、現在の変数のIDがセットにあれば値を上書きする
 
-        currentSetId = setId;
-        saveData();
-        renderVariables();
-    }
+    let updatedCount = 0;
+
+    variables.forEach(variable => { // 既存の変数をループ
+        const savedValue = set.values.find(sv => sv.variableId === variable.id);
+        if (savedValue) {
+            variable.value = savedValue.value;
+            variable.lastExtracted = set.createdAt; // 抽出日時はセット作成日時とする
+            variable.sourceUrl = set.sourceUrl;
+            updatedCount++;
+        } else {
+            // セットに含まれていない変数の値はクリアする
+            variable.value = '';
+            variable.lastExtracted = null;
+            variable.sourceUrl = '';
+        }
+    });
+
+    currentSetId = setId;
+    saveData();
+    renderVariables();
+
+    // 通知（オプション）
+    // alert(`${updatedCount}個の変数の値を読み込みました`); 
+    // ダイアログ不要とのことなので、通知もコンソールログ程度にするか、あるいはトースト通知があれば良いが
+    console.log(`[Element Clip] Loaded set ${set.name}: ${updatedCount} variables updated`);
 }
-
 /**
  * セットを削除
  */

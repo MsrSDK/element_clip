@@ -50,6 +50,13 @@ body {
   border-left: 4px solid #4CAF50;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 /* アクションボタン */
 .actions {
   margin-bottom: 24px;
