@@ -345,11 +345,15 @@ function openVariableDialog(variableId = null) {
             document.getElementById('variable-selector').value = variable.extractSelector;
             document.getElementById('variable-paste-selector').value = variable.pasteSelector || '';
             document.getElementById('variable-specificity').value = variable.specificityLevel || 1;
+            document.getElementById('variable-paste-specificity').value = variable.pasteSpecificityLevel || 1;
             document.getElementById('variable-extract-type').value = variable.extractType;
-            document.getElementById('variable-attribute-name').value = variable.attributeName || '';
-
-            const attributeGroup = document.getElementById('attribute-group');
-            attributeGroup.style.display = variable.extractType === 'attribute' ? 'block' : 'none';
+            if (variable.attributeName) {
+                document.getElementById('variable-attribute-name').value = variable.attributeName;
+                document.getElementById('attribute-group').style.display = 'block';
+            } else {
+                document.getElementById('variable-attribute-name').value = '';
+                document.getElementById('attribute-group').style.display = 'none';
+            }
         }
     } else {
         // 新規作成モード
@@ -357,6 +361,7 @@ function openVariableDialog(variableId = null) {
         document.getElementById('variable-selector').value = '';
         document.getElementById('variable-paste-selector').value = '';
         document.getElementById('variable-specificity').value = '1';
+        document.getElementById('variable-paste-specificity').value = '1';
         document.getElementById('variable-extract-type').value = 'text';
         document.getElementById('variable-attribute-name').value = '';
         document.getElementById('attribute-group').style.display = 'none';
@@ -377,12 +382,18 @@ function closeVariableDialog() {
  * 要素選択を開始
  */
 function startSelectElement() {
-    const specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
+    // ターゲットに応じて詳細度レベルを取得
+    let specificityLevel;
+    if (selectingTarget === 'extract') {
+        specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
+    } else {
+        specificityLevel = parseInt(document.getElementById('variable-paste-specificity').value) || 1;
+    }
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
-                action: 'startSelectExtract',
+                action: 'startSelectExtract', // アクション名は共通でOK（content script側では単にセレクタを生成して返すだけなので）
                 variableId: currentEditingVariableId || 'temp',
                 specificityLevel: specificityLevel
             });
@@ -432,6 +443,7 @@ function saveVariable() {
             variable.extractSelector = selector;
             variable.pasteSelector = pasteSelector;
             variable.specificityLevel = specificityLevel;
+            variable.pasteSpecificityLevel = parseInt(document.getElementById('variable-paste-specificity').value) || 1;
             variable.extractType = extractType;
             variable.attributeName = extractType === 'attribute' ? attributeName : null;
         }
@@ -443,6 +455,7 @@ function saveVariable() {
             extractSelector: selector,
             pasteSelector: pasteSelector,
             specificityLevel: specificityLevel,
+            pasteSpecificityLevel: parseInt(document.getElementById('variable-paste-specificity').value) || 1,
             extractType: extractType,
             attributeName: extractType === 'attribute' ? attributeName : null,
             value: '',

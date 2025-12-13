@@ -147,6 +147,15 @@
         </div>
         <div class="selector-hint">未設定の場合は、貼付ボタン押下時に要素を選択します</div>
       </div>
+      <div class="form-group">
+        <label for="variable-paste-specificity">貼り付け用セレクタ詳細度レベル</label>
+        <select id="variable-paste-specificity" class="form-select">
+          <option value="1" selected>レベル1 - 標準（推奨）</option>
+          <option value="2">レベル2 - 詳細</option>
+          <option value="3">レベル3 - 非常に詳細</option>
+          <option value="4">レベル4 - 最大（完全パス）</option>
+        </select>
+      </div>
       <div class="dialog-actions">
         <button id="btn-dialog-cancel" class="btn btn-secondary">キャンセル</button>
         <button id="btn-dialog-save" class="btn btn-primary">保存</button>
