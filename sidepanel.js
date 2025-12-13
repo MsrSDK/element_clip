@@ -154,6 +154,15 @@ function setupEventListeners() {
         deleteSelectedSets();
     });
 
+    // 一覧表示ボタン
+    document.getElementById('btn-show-table').addEventListener('click', () => {
+        openTableDialog();
+    });
+
+    document.getElementById('btn-close-table').addEventListener('click', () => {
+        document.getElementById('table-dialog').classList.remove('active');
+    });
+
     // 設定
     document.getElementById('setting-auto-highlight').addEventListener('change', (e) => {
         settings.autoHighlight = e.target.checked;
@@ -727,6 +736,86 @@ function saveSet() {
     saveData();
     renderSets();
     closeSetDialog();
+}
+
+/**
+ * テーブルダイアログを開く
+ */
+function openTableDialog() {
+    const dialog = document.getElementById('table-dialog');
+    const tableFn = document.getElementById('sets-table-content');
+
+    // ヘッダー生成
+    let headerHtml = `
+        <thead>
+            <tr>
+                <th style="min-width: 120px;">セット名</th>
+                <th style="min-width: 100px;">作成日時</th>
+    `;
+
+    // 現在の変数定義に基づいて列を生成
+    variables.forEach(v => {
+        headerHtml += `<th style="min-width: 150px;">${escapeHtml(v.name)}</th>`;
+    });
+
+    headerHtml += `
+                <th class="col-actions-header">操作</th>
+            </tr>
+        </thead>
+    `;
+
+    // ボディ生成
+    let bodyHtml = '<tbody>';
+
+    if (savedSets.length === 0) {
+        const colSpan = variables.length + 3;
+        bodyHtml += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">保存されたセットはありません</td></tr>`;
+    } else {
+        savedSets.forEach(set => {
+            bodyHtml += `<tr>`;
+            bodyHtml += `<td>${escapeHtml(set.name)}</td>`;
+            bodyHtml += `<td>${formatTimestamp(set.createdAt)}</td>`;
+
+            // 各変数の値を検索して表示
+            variables.forEach(v => {
+                const savedValue = set.values.find(sv => sv.variableId === v.id);
+                const displayValue = savedValue ? escapeHtml(savedValue.value) : '<span style="color: #ccc;">-</span>';
+                bodyHtml += `<td title="${savedValue ? escapeHtml(savedValue.value) : ''}">${displayValue}</td>`;
+            });
+
+            bodyHtml += `
+                <td class="col-actions">
+                    <button class="btn btn-small btn-info btn-row-action" data-action="load" data-id="${set.id}" title="読込">📥</button>
+                    <button class="btn btn-small btn-danger btn-row-action" data-action="delete" data-id="${set.id}" title="削除">🗑️</button>
+                </td>
+            `;
+            bodyHtml += `</tr>`;
+        });
+    }
+
+    bodyHtml += '</tbody>';
+
+    tableFn.innerHTML = headerHtml + bodyHtml;
+
+    // アクションボタンのリスナー設定
+    tableFn.querySelectorAll('.btn-row-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const action = e.currentTarget.dataset.action;
+            const id = e.currentTarget.dataset.id;
+
+            if (action === 'load') {
+                loadSet(id);
+                dialog.classList.remove('active'); // 読込後は閉じる
+            } else if (action === 'delete') {
+                if (confirm('このセットを削除してもよろしいですか？')) {
+                    deleteSet(id); // 内部でsavedSets更新
+                    openTableDialog(); // テーブル再描画
+                }
+            }
+        });
+    });
+
+    dialog.classList.add('active');
 }
 
 /**

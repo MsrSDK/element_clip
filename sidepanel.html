@@ -55,10 +55,15 @@
     <!-- セット管理 -->
     <section class="sets-section">
       <div class="section-header">
-        <h2 class="section-title" style="margin-bottom: 0;">保存済みセット</h2>
-        <button id="btn-delete-selected-sets" class="btn btn-small btn-danger" style="display: none;">
-          <span class="icon">🗑️</span> 選択削除
-        </button>
+        <h2 class="section-title">保存済みセット</h2>
+        <div style="display: flex; gap: 4px;">
+          <button id="btn-show-table" class="btn btn-small btn-secondary" title="一覧表示">
+            <span class="icon">📊</span>
+          </button>
+          <div id="btn-delete-selected-sets" class="btn btn-small btn-danger" style="display: none;">
+            <span class="icon">🗑️</span> 選択削除
+          </div>
+        </div>
       </div>
       <div id="sets-list" class="sets-list">
         <!-- セットアイテムが動的に追加される -->
@@ -174,6 +179,21 @@
       <div class="dialog-actions">
         <button id="btn-set-cancel" class="btn btn-secondary">キャンセル</button>
         <button id="btn-set-save" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- テーブル表示ダイアログ -->
+  <div id="table-dialog" class="dialog-overlay">
+    <div class="dialog dialog-large">
+      <div class="dialog-header">
+        <h3 class="dialog-title">保存済みセット一覧</h3>
+        <button id="btn-close-table" class="btn-close">×</button>
+      </div>
+      <div class="table-container">
+        <table id="sets-table-content" class="data-table">
+          <!-- JSで動的に生成 -->
+        </table>
       </div>
     </div>
   </div>
