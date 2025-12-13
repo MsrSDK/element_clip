@@ -168,7 +168,28 @@ body {
   background: #f5f5f5;
   border-radius: 8px;
   padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
   transition: all 0.2s ease;
+  cursor: grab;
+  /* ドラッグ可能であることを示すカーソル */
+}
+
+.variable-item:active {
+  cursor: grabbing;
+}
+
+.variable-item.dragging {
+  opacity: 0.5;
+  background: #e0e0e0;
+  border: 2px dashed #999;
+}
+
+.variable-item.drag-over {
+  border-top: 2px solid #2196F3;
+  margin-top: 2px;
+  /* ボーダー分のズレを防ぐための調整 */
 }
 
 .variable-item:hover {
@@ -346,7 +367,26 @@ body {
   background: #f5f5f5;
   border-radius: 8px;
   padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
   transition: all 0.2s ease;
+  cursor: grab;
+}
+
+.set-item:active {
+  cursor: grabbing;
+}
+
+.set-item.dragging {
+  opacity: 0.5;
+  background: #e0e0e0;
+  border: 2px dashed #999;
+}
+
+.set-item.drag-over {
+  border-top: 2px solid #2196F3;
+  margin-top: 2px;
 }
 
 .set-item:hover {

@@ -187,8 +187,8 @@ function renderVariables() {
 
     emptyState.classList.add('hidden');
 
-    variables.forEach(variable => {
-        const item = createVariableItem(variable);
+    variables.forEach((variable, index) => {
+        const item = createVariableItem(variable, index);
         variablesList.appendChild(item);
     });
 }
@@ -196,9 +196,19 @@ function renderVariables() {
 /**
  * 変数アイテムを作成
  */
-function createVariableItem(variable) {
+function createVariableItem(variable, index) {
     const div = document.createElement('div');
     div.className = 'variable-item';
+    div.draggable = true;
+    div.dataset.index = index; // 配列インデックスを保持
+    div.dataset.id = variable.id;
+
+    // ドラッグ&ドロップイベントの設定
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragover', handleDragOver);
+    div.addEventListener('dragleave', handleDragLeave);
+    div.addEventListener('drop', handleDrop);
+    div.addEventListener('dragend', handleDragEnd);
     div.innerHTML = `
     <div class="variable-header">
       <div class="variable-name">${escapeHtml(variable.name)}</div>
@@ -251,8 +261,8 @@ function renderSets() {
 
     setsEmptyState.classList.add('hidden');
 
-    savedSets.forEach(set => {
-        const item = createSetItem(set);
+    savedSets.forEach((set, index) => {
+        const item = createSetItem(set, index);
         setsList.appendChild(item);
     });
 }
@@ -260,9 +270,19 @@ function renderSets() {
 /**
  * セットアイテムを作成
  */
-function createSetItem(set) {
+function createSetItem(set, index) {
     const div = document.createElement('div');
     div.className = 'set-item';
+    div.draggable = true;
+    div.dataset.index = index;
+    div.dataset.id = set.id;
+
+    // ドラッグ&ドロップイベントの設定
+    div.addEventListener('dragstart', handleSetDragStart);
+    div.addEventListener('dragover', handleSetDragOver);
+    div.addEventListener('dragleave', handleSetDragLeave);
+    div.addEventListener('drop', handleSetDrop);
+    div.addEventListener('dragend', handleSetDragEnd);
     div.innerHTML = `
     <div class="set-header">
       <div class="set-name">${escapeHtml(set.name)}</div>
@@ -599,7 +619,25 @@ function openSetDialog() {
         return;
     }
 
-    const defaultName = `データセット ${formatTimestamp(getCurrentTimestamp())}`;
+    // デフォルト名を生成: 1番目と2番目の変数の値を使用
+    let defaultName = '';
+    const firstValue = variables[0] && variables[0].value ? variables[0].value.trim() : '';
+    const secondValue = variables[1] && variables[1].value ? variables[1].value.trim() : '';
+
+    if (firstValue) {
+        defaultName += firstValue;
+        if (secondValue) {
+            defaultName += ` ${secondValue}`;
+        }
+    } else if (secondValue) {
+        defaultName = secondValue;
+    }
+
+    // 値がない場合は日時を使用
+    if (!defaultName) {
+        defaultName = `データセット ${formatTimestamp(getCurrentTimestamp())}`;
+    }
+
     document.getElementById('set-name').value = defaultName;
     setDialog.classList.add('active');
 }
@@ -701,4 +739,157 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+
+/**
+ * ドラッグ開始時
+ */
+function handleDragStart(e) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.index);
+    e.dataTransfer.setData('type', 'variable'); // タイプ識別
+    e.target.classList.add('dragging');
+}
+
+/**
+ * ドラッグオーバー時（ドロップ可能にする）
+ */
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // ドラッグ中の要素自体には何もしない
+    const item = e.target.closest('.variable-item');
+    if (!item || item.classList.contains('dragging')) return;
+
+    item.classList.add('drag-over');
+}
+
+/**
+ * ドラッグ要素が外れた時
+ */
+function handleDragLeave(e) {
+    const item = e.target.closest('.variable-item');
+    if (item) {
+        item.classList.remove('drag-over');
+    }
+}
+
+/**
+ * ドロップ時
+ */
+function handleDrop(e) {
+    e.preventDefault();
+
+    // タイプチェック
+    const type = e.dataTransfer.getData('type');
+    if (type !== 'variable') return;
+
+    const targetItem = e.target.closest('.variable-item');
+    if (!targetItem) return;
+
+    // スタイルをリセット
+    targetItem.classList.remove('drag-over');
+
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    const toIndex = parseInt(targetItem.dataset.index);
+
+    if (fromIndex === toIndex) return;
+
+    // 配列の並べ替え
+    const item = variables[fromIndex];
+    variables.splice(fromIndex, 1);
+    variables.splice(toIndex, 0, item);
+
+    // 保存して再描画
+    saveData();
+    renderVariables();
+}
+
+/**
+ * ドラッグ終了時
+ */
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+
+    // すべてのdrag-overクラスを削除（念のため）
+    document.querySelectorAll('.variable-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
 console.log('[Element Clip] Side panel script loaded');
+
+/**
+ * セットのドラッグ開始時
+ */
+function handleSetDragStart(e) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.index);
+    e.dataTransfer.setData('type', 'set'); // タイプを識別
+    e.target.classList.add('dragging');
+}
+
+/**
+ * セットのドラッグオーバー時
+ */
+function handleSetDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // タイプチェックはdropで行うか、ここで行ってdropEffectを制御する
+
+    const item = e.target.closest('.set-item');
+    if (!item || item.classList.contains('dragging')) return;
+
+    item.classList.add('drag-over');
+}
+
+/**
+ * セットのドラッグ要素が外れた時
+ */
+function handleSetDragLeave(e) {
+    const item = e.target.closest('.set-item');
+    if (item) {
+        item.classList.remove('drag-over');
+    }
+}
+
+/**
+ * セットのドロップ時
+ */
+function handleSetDrop(e) {
+    e.preventDefault();
+
+    // タイプチェック
+    const type = e.dataTransfer.getData('type');
+    if (type !== 'set') return;
+
+    const targetItem = e.target.closest('.set-item');
+    if (!targetItem) return;
+
+    targetItem.classList.remove('drag-over');
+
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    const toIndex = parseInt(targetItem.dataset.index);
+
+    if (fromIndex === toIndex) return;
+
+    // 配列の並べ替え
+    const item = savedSets[fromIndex];
+    savedSets.splice(fromIndex, 1);
+    savedSets.splice(toIndex, 0, item);
+
+    // 保存して再描画
+    saveData();
+    renderSets();
+}
+
+/**
+ * セットのドラッグ終了時
+ */
+function handleSetDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.set-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
