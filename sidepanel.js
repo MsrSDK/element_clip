@@ -127,6 +127,17 @@ function setupEventListeners() {
         startSelectElement();
     });
 
+    // セレクタ確認ボタン
+    document.getElementById('btn-verify-selector').addEventListener('click', () => {
+        const selector = document.getElementById('variable-selector').value.trim();
+        verifySelector(selector);
+    });
+
+    document.getElementById('btn-verify-paste-selector').addEventListener('click', () => {
+        const selector = document.getElementById('variable-paste-selector').value.trim();
+        verifySelector(selector);
+    });
+
     document.getElementById('variable-extract-type').addEventListener('change', (e) => {
         const attributeGroup = document.getElementById('attribute-group');
         attributeGroup.style.display = e.target.value === 'attribute' ? 'block' : 'none';
@@ -400,6 +411,38 @@ function openVariableDialog(variableId = null) {
 function closeVariableDialog() {
     variableDialog.classList.remove('active');
     currentEditingVariableId = null;
+}
+
+/**
+ * セレクタの検証（ハイライト）
+ */
+function verifySelector(selector) {
+    if (!selector) {
+        alert('セレクタが入力されていません');
+        return;
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: 'verifySelector',
+                selector: selector
+            }, (response) => {
+                if (response && response.success) {
+                    // 成功時はContent Script側でハイライトしているので、
+                    // ここでは特に何もしないか、軽く通知する
+                    if (response.count === 0) {
+                        alert('該当する要素が見つかりませんでした');
+                    } else {
+                        console.log(`[Element Clip] ${response.count} elements highlighted`);
+                    }
+                } else {
+                    // エラーなどの場合
+                    alert('該当する要素が見つかりませんでした（またはページが読み込まれていません）');
+                }
+            });
+        }
+    });
 }
 
 /**

@@ -26,10 +26,11 @@ function startSelectMode(mode, variableId = null) {
     // オーバーレイを作成
     createOverlay();
 
-    // マウスイベントリスナーを追加
+    // マウス/キーボードイベントリスナーを追加
     document.addEventListener('mouseover', handleMouseOver, true);
     document.addEventListener('mouseout', handleMouseOut, true);
     document.addEventListener('click', handleClick, true);
+    document.addEventListener('contextmenu', handleContextMenu, true); // 右クリックでキャンセル
 
     console.log(`[Element Clip] ${mode} mode started`);
 }
@@ -45,6 +46,7 @@ function stopSelectMode() {
     document.removeEventListener('mouseover', handleMouseOver, true);
     document.removeEventListener('mouseout', handleMouseOut, true);
     document.removeEventListener('click', handleClick, true);
+    document.removeEventListener('contextmenu', handleContextMenu, true);
 
     // オーバーレイを削除
     removeOverlay();
@@ -56,6 +58,19 @@ function stopSelectMode() {
     }
 
     console.log('[Element Clip] Select mode stopped');
+}
+
+/**
+ * 右クリックイベントハンドラ（キャンセル用）
+ */
+function handleContextMenu(event) {
+    if (currentMode) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        stopSelectMode();
+        console.log('[Element Clip] Selection cancelled by Right Click');
+    }
 }
 
 /**
@@ -96,13 +111,10 @@ function createOverlay() {
   `;
 
     const modeText = currentMode === 'select-extract' ? '抽出する要素を選択してください' : '貼り付け先の要素を選択してください';
-    messageBox.textContent = modeText + ' (Escキーでキャンセル)';
+    messageBox.textContent = modeText + ' (右クリックでキャンセル)';
 
     overlayElement.appendChild(messageBox);
     document.body.appendChild(overlayElement);
-
-    // Escキーでキャンセル
-    document.addEventListener('keydown', handleEscapeKey);
 }
 
 /**
@@ -113,22 +125,9 @@ function removeOverlay() {
         overlayElement.remove();
         overlayElement = null;
     }
-
-    document.removeEventListener('keydown', handleEscapeKey);
 }
 
 /**
- * Escキーのハンドラ
- */
-function handleEscapeKey(event) {
-    if (event.key === 'Escape') {
-        stopSelectMode();
-        chrome.runtime.sendMessage({
-            action: 'selectCancelled'
-        });
-    }
-}
-
 /**
  * マウスオーバーのハンドラ
  */
@@ -314,6 +313,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             break;
 
         case 'pasteValue':
+            // pasteValueToElement(request.selector, request.value, sendResponse); // Assuming this function is defined elsewhere or will be added
             const pasteSuccess = pasteValueToPage(request.selector, request.value);
             sendResponse({ success: pasteSuccess });
             if (pasteSuccess) {
@@ -321,7 +321,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } else {
                 showNotification('貼り付けに失敗しました', 'error');
             }
-            break;
+            return true;
+
+        case 'verifySelector':
+            highlightElements(request.selector, sendResponse);
+            return true;
 
         case 'stopSelect':
             stopSelectMode();
@@ -334,5 +338,52 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true; // 非同期レスポンスを有効化
 });
+/**
+ * セレクタ確認用に要素を一時ハイライト
+ */
+function highlightElements(selector, sendResponse) {
+    try {
+        const elements = document.querySelectorAll(selector);
+
+        if (elements.length === 0) {
+            sendResponse({ success: true, count: 0 });
+            return;
+        }
+
+        elements.forEach(el => {
+            // 元のスタイルを保存
+            const originalTransition = el.style.transition;
+            const originalOutline = el.style.outline;
+            const originalBoxShadow = el.style.boxShadow;
+
+            // ハイライト適用
+            el.style.transition = 'all 0.3s ease';
+            el.style.outline = '4px solid #FF5722';
+            el.style.outlineOffset = '2px';
+            el.style.boxShadow = '0 0 10px rgba(255, 87, 34, 0.5)';
+
+            // スクロールして表示（最初の要素のみ）
+            if (el === elements[0]) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // 数秒後に元に戻す
+            setTimeout(() => {
+                el.style.outline = originalOutline;
+                el.style.boxShadow = originalBoxShadow;
+
+                setTimeout(() => {
+                    el.style.transition = originalTransition;
+                }, 300);
+            }, 2000);
+        });
+
+        sendResponse({ success: true, count: elements.length });
+
+    } catch (e) {
+        console.error('[Element Clip] Verification failed:', e);
+        sendResponse({ success: false, error: e.toString() });
+    }
+}
 
 console.log('[Element Clip] Content script loaded');
