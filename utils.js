@@ -274,6 +274,21 @@ function formatTimestamp(timestamp) {
   return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
+/**
+ * HTMLエスケープ
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.toString().replace(/[&<>"']/g, m => map[m]);
+}
+
 // エクスポート（Chrome拡張機能のコンテキストで使用）
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -284,6 +299,7 @@ if (typeof module !== 'undefined' && module.exports) {
     pasteValueBySelector,
     generateUUID,
     getCurrentTimestamp,
-    formatTimestamp
+    formatTimestamp,
+    escapeHtml
   };
 }
