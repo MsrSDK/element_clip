@@ -115,6 +115,19 @@ function setupEventListeners() {
         settings.clearValuesAfterSave = e.target.checked;
         saveData();
     });
+
+    // テンプレート管理 (v1.4.7)
+    document.getElementById('btn-manage-templates').addEventListener('click', () => {
+        openTemplateDialog();
+    });
+
+    document.getElementById('btn-close-template-dialog').addEventListener('click', () => {
+        closeTemplateDialog();
+    });
+
+    document.getElementById('btn-save-template').addEventListener('click', () => {
+        saveCurrentAsTemplate();
+    });
 }
 
 /**

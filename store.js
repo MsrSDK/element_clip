@@ -8,6 +8,7 @@
 
 var variables = [];
 var savedSets = [];
+var variableTemplates = []; // 変数項目のテンプレート
 var currentSetId = null;
 var settings = {
     autoHighlight: true,
@@ -20,9 +21,10 @@ var settings = {
  * @param {Function} callback - 読み込み完了後のコールバック
  */
 function loadData(callback) {
-    chrome.storage.local.get(['variables', 'savedSets', 'currentSetId', 'settings'], (result) => {
+    chrome.storage.local.get(['variables', 'savedSets', 'variableTemplates', 'currentSetId', 'settings'], (result) => {
         variables = result.variables || [];
         savedSets = result.savedSets || [];
+        variableTemplates = result.variableTemplates || [];
         currentSetId = result.currentSetId || null;
 
         // 設定をマージ
@@ -60,6 +62,7 @@ function saveData() {
     chrome.storage.local.set({
         variables: variables,
         savedSets: savedSets,
+        variableTemplates: variableTemplates,
         currentSetId: currentSetId,
         settings: settings
     });
