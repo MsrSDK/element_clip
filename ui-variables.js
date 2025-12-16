@@ -357,8 +357,8 @@ function saveVariable() {
     const extractType = document.getElementById('variable-extract-type').value;
     const attributeName = document.getElementById('variable-attribute-name').value.trim();
 
-    if (!name || !selector) {
-        alert('変数名と抽出元CSSセレクタは必須です');
+    if (!name) {
+        alert('変数名は必須です');
         return;
     }
 
