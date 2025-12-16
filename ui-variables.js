@@ -231,7 +231,7 @@ function startPasteVariable(variableId) {
                     if (response && response.success) {
                         console.log(`[Element Clip] Pasted value to ${variable.pasteSelector}`);
                     } else {
-                        if (confirm('指定された貼り付け先要素が見つかりませんでした。手動で要素を選択して貼り付けますか？')) {
+                        if (confirm('指定された貼付先要素が見つかりませんでした。手動で要素を選択して貼付ますか？')) {
                             chrome.tabs.sendMessage(tabs[0].id, {
                                 action: 'startSelectPaste',
                                 variableId: variableId
@@ -269,12 +269,7 @@ function pasteAllVariables() {
                 setTimeout(() => {
                     chrome.tabs.sendMessage(tabs[0].id, {
                         action: 'pasteValue',
-                        selector: variable.extractSelector, // 注意: ここはextractSelectorを使う? 要件確認: 一括貼り付けはextractSelector(元)を使う仕様だったか?
-                        // コード上はextractSelectorを使っていたが、貼り付け先設定があればそちらを使うべきでは?
-                        // 元コード: selector: variable.extractSelector
-                        // しかしv1.3.9でPaste Selectorが追加された。
-                        // ここでPaste Selectorがあれば優先すべき。
-                        selector: variable.pasteSelector || variable.extractSelector,
+                        selector: variable.pasteSelector,
                         value: variable.value
                     }, (response) => {
                         completed++;

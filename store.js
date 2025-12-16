@@ -37,10 +37,10 @@ function loadData(callback) {
         variables.forEach(v => {
             if (v.specificityLevel === undefined) {
                 v.specificityLevel = 1;
-                v.pasteSpecificityLevel = 1; // 貼り付け用も
+                v.pasteSpecificityLevel = 1; // 貼付用も
                 needsSave = true;
             }
-            // 貼り付け用がない場合のマイグレーション
+            // 貼付用がない場合のマイグレーション
             if (v.pasteSpecificityLevel === undefined) {
                 v.pasteSpecificityLevel = 1;
                 needsSave = true;
