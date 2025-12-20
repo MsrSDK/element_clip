@@ -94,58 +94,106 @@ body {
   transform: translateY(0);
 }
 
+:root {
+  --color-primary: #63A92D;
+  /* Green: Save/Main */
+  --color-extract: #017AC9;
+  /* Blue: Extract (In) */
+  --color-transform: #6C4BA4;
+  /* Purple: Transform (Process) */
+  --color-paste: #FD7B0A;
+  /* Orange: Paste (Out) */
+  --color-danger: #F44336;
+  /* Red: Delete */
+  --color-secondary: #78909C;
+  /* Blue Grey: Secondary/Settings */
+  --color-warning: #FFCA28;
+  /* Amber: Warning */
+}
+
 .btn-primary {
-  background: #4CAF50;
+  background: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #45a049;
+  filter: brightness(0.9);
 }
 
-.btn-success {
-  background: #2196F3;
+.btn-extract {
+  background: var(--color-extract);
   color: white;
 }
 
-.btn-success:hover {
-  background: #1976D2;
+.btn-extract:hover {
+  filter: brightness(0.9);
+}
+
+/* Mapping old usage to new just in case, or replacing usages */
+.btn-success {
+  background: var(--color-extract);
+  /* Re-map success to extract color for now */
+  color: white;
+}
+
+.btn-paste {
+  background: var(--color-paste);
+  color: white;
+}
+
+.btn-paste:hover {
+  filter: brightness(0.9);
 }
 
 .btn-info {
-  background: #FF9800;
+  background: var(--color-paste);
+  /* Re-map info to paste color */
   color: white;
 }
 
-.btn-info:hover {
-  background: #F57C00;
-}
-
-.btn-warning {
-  background: #9C27B0;
+.btn-transform {
+  background: var(--color-transform);
   color: white;
 }
 
-.btn-warning:hover {
-  background: #7B1FA2;
+.btn-transform:hover {
+  filter: brightness(0.9);
 }
 
 .btn-secondary {
-  background: #757575;
+  background: var(--color-secondary);
   color: white;
 }
 
 .btn-secondary:hover {
-  background: #616161;
+  filter: brightness(0.9);
 }
 
 .btn-danger {
-  background: #f44336;
+  background: var(--color-danger);
   color: white;
 }
 
 .btn-danger:hover {
-  background: #d32f2f;
+  filter: brightness(0.9);
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: #333;
+}
+
+.btn-warning:hover {
+  filter: brightness(0.9);
+}
+
+.btn-icon {
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  border-radius: 4px;
+  display: inline-flex;
 }
 
 .icon {
@@ -509,10 +557,13 @@ body {
 .dialog {
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
 }
 
 .dialog-title {
@@ -523,15 +574,54 @@ body {
 }
 
 .form-group {
+  margin-bottom: 12px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  min-width: 0;
+  /* Flex item overflow fix */
+}
+
+/* 変数設定ダイアログのグループ背景色 */
+#variable-dialog .form-group {
+  padding: 12px;
+  border-radius: 8px;
   margin-bottom: 16px;
+  border-left: 4px solid transparent;
+}
+
+#variable-dialog .group-basic {
+  background-color: #f8f9fa;
+  border-left-color: #ced4da;
+}
+
+#variable-dialog .group-extract {
+  background-color: #e3f2fd;
+  border-left-color: var(--color-extract);
+}
+
+#variable-dialog .group-paste {
+  background-color: #fff3e0;
+  border-left-color: var(--color-paste);
+}
+
+#variable-dialog .group-transform {
+  background-color: #f3e5f5;
+  border-left-color: var(--color-transform);
 }
 
 .form-group label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .form-input,

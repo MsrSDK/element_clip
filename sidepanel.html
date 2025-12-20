@@ -32,20 +32,24 @@
           <span class="icon">➕</span>
           新しい変数を追加
         </button>
-        <div class="action-group">
-          <button id="btn-extract-all" class="btn btn-success">
+        <section class="action-group">
+          <button id="btn-extract-all" class="btn btn-extract">
             <span class="icon">📥</span>
             一括抽出
           </button>
-          <button id="btn-paste-all" class="btn btn-info">
+          <button id="btn-paste-all" class="btn btn-paste">
             <span class="icon">📤</span>
-            一括貼付
+            一括貼り付け
           </button>
-          <button id="btn-save-set" class="btn btn-warning">
+          <button id="btn-transform-all" class="btn btn-transform">
+            <span class="icon">⚡</span>
+            一括変換
+          </button>
+          <button id="btn-save-set" class="btn btn-primary" style="grid-column: span 3;">
             <span class="icon">💾</span>
-            変数セット保存
+            現在の変数をセットとして保存
           </button>
-        </div>
+        </section>
       </section>
 
       <div id="variables-list" class="variables-list">
@@ -106,12 +110,12 @@
   <div id="variable-dialog" class="dialog-overlay">
     <div class="dialog">
       <h3 class="dialog-title">変数の設定</h3>
-      <div class="form-group">
+      <div class="form-group group-basic">
         <label for="variable-name">変数名</label>
         <input type="text" id="variable-name" class="form-input" placeholder="例: ユーザー名">
       </div>
       <div class="section-title">抽出設定</div>
-      <div class="form-group">
+      <div class="form-group group-extract">
         <label for="variable-selector">抽出元CSSセレクタ</label>
         <div class="selector-group">
           <textarea id="variable-selector" class="form-textarea" placeholder="例: input#username" rows="2"></textarea>
@@ -122,7 +126,7 @@
         </div>
         <div class="selector-hint">セレクタを手動で編集することもできます</div>
       </div>
-      <div class="form-group">
+      <div class="form-group group-extract">
         <label for="variable-specificity">セレクタ詳細度レベル</label>
         <select id="variable-specificity" class="form-select">
           <option value="1" selected>レベル1 - 簡素</option>
@@ -134,7 +138,7 @@
           レベルが高いほど特定的なセレクタが生成されます。
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group group-extract">
         <label for="variable-extract-type">抽出タイプ</label>
         <select id="variable-extract-type" class="form-select">
           <option value="value">value (input/select)</option>
@@ -143,7 +147,7 @@
           <option value="innerHTML">innerHTML</option>
         </select>
       </div>
-      <div class="form-group" id="attribute-group" style="display: none;">
+      <div class="form-group group-extract" id="attribute-group" style="display: none;">
         <label for="variable-attribute-name">属性名</label>
         <input type="text" id="variable-attribute-name" class="form-input" placeholder="例: href, src">
       </div>
@@ -151,7 +155,7 @@
       <div class="separator"></div>
 
       <div class="section-title">貼付設定</div>
-      <div class="form-group">
+      <div class="form-group group-paste">
         <label for="variable-paste-selector">貼付先CSSセレクタ（任意）</label>
         <div class="selector-group">
           <textarea id="variable-paste-selector" class="form-textarea" placeholder="例: input#dest-input"
@@ -163,15 +167,28 @@
         </div>
         <div class="selector-hint">未設定の場合は、貼付ボタン押下時に要素を選択します</div>
       </div>
-      <div class="form-group">
-        <label for="variable-paste-specificity">貼付用セレクタ詳細度レベル</label>
+      <div class="form-group group-paste">
+        <label for="variable-paste-specificity">貼り付け用セレクタ詳細度レベル</label>
         <select id="variable-paste-specificity" class="form-select">
-          <option value="1" selected>レベル1 - 簡素</option>
+          <option value="1" selected>レベル1 - 標準（推奨）</option>
           <option value="2">レベル2 - 詳細</option>
           <option value="3">レベル3 - 非常に詳細</option>
           <option value="4">レベル4 - 最大（完全パス）</option>
         </select>
       </div>
+
+      <div class="section-title" style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">データ変換設定</div>
+      <div class="form-row">
+        <div class="form-group group-transform">
+          <label for="variable-regex">正規表現パターン</label>
+          <input type="text" id="variable-regex" class="form-input" placeholder="例: ^Price:\s*">
+        </div>
+        <div class="form-group group-transform">
+          <label for="variable-regex-replacement">置換文字列</label>
+          <input type="text" id="variable-regex-replacement" class="form-input" placeholder="例: $1">
+        </div>
+      </div>
+
       <div class="dialog-actions">
         <button id="btn-dialog-cancel" class="btn btn-secondary">キャンセル</button>
         <button id="btn-dialog-save" class="btn btn-primary">保存</button>

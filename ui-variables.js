@@ -50,10 +50,11 @@ function createVariableItem(variable, index) {
         <div class="variable-header">
           <div class="variable-name">${escapeHtml(variable.name)}</div>
           <div class="variable-actions">
-            <button class="btn btn-small btn-success" data-action="extract" data-id="${variable.id}">抽出</button>
-            <button class="btn btn-small btn-info" data-action="paste" data-id="${variable.id}">貼付</button>
-            <button class="btn btn-small btn-secondary" data-action="edit" data-id="${variable.id}">編集</button>
-            <button class="btn btn-small btn-danger" data-action="delete" data-id="${variable.id}">削除</button>
+            <button class="btn btn-small btn-extract btn-icon" data-action="extract" data-id="${variable.id}" title="抽出">📥</button>
+            <button class="btn btn-small btn-transform btn-icon" data-action="transform" data-id="${variable.id}" title="正規表現変換">⚡</button>
+            <button class="btn btn-small btn-paste btn-icon" data-action="paste" data-id="${variable.id}" title="貼り付け">📤</button>
+            <button class="btn btn-small btn-secondary btn-icon" data-action="settings" data-id="${variable.id}" title="設定">⚙️</button>
+            <button class="btn btn-small btn-danger btn-icon" data-action="delete" data-id="${variable.id}" title="削除">🗑️</button>
           </div>
         </div>
         <div class="variable-value-container">
@@ -71,8 +72,9 @@ function createVariableItem(variable, index) {
 
     // アクションボタンイベント
     div.querySelector('[data-action="extract"]').addEventListener('click', () => extractVariable(variable.id));
+    div.querySelector('[data-action="transform"]').addEventListener('click', () => transformVariable(variable.id));
     div.querySelector('[data-action="paste"]').addEventListener('click', () => startPasteVariable(variable.id));
-    div.querySelector('[data-action="edit"]').addEventListener('click', () => editVariable(variable.id));
+    div.querySelector('[data-action="settings"]').addEventListener('click', () => editVariable(variable.id));
     div.querySelector('[data-action="delete"]').addEventListener('click', () => deleteVariable(variable.id));
 
     // 値の編集イベント
@@ -280,6 +282,68 @@ function pasteAllVariables() {
     });
 }
 
+function transformAllVariables() {
+    let count = 0;
+    variables.forEach(v => {
+        if (v.value && v.regexPattern) {
+            try {
+                const regex = new RegExp(v.regexPattern, 'g');
+                // undefinedの場合は空文字として扱う
+                const replacement = v.regexReplacement || '';
+                const newValue = v.value.replace(regex, replacement);
+
+                // 変更があった場合のみ更新
+                if (newValue !== v.value) {
+                    v.value = newValue;
+                    count++;
+                }
+            } catch (e) {
+                console.error(`Regex error for variable ${v.name}:`, e);
+            }
+        }
+    });
+
+    if (count > 0) {
+        saveData();
+        renderVariables();
+        alert(`${count}個の変数を変換しました`);
+    } else {
+        alert('変換により変更された変数はありませんでした');
+    }
+}
+
+function transformVariable(variableId) {
+    const variable = variables.find(v => v.id === variableId);
+    if (!variable) return;
+
+    if (!variable.value) {
+        alert('値がありません');
+        return;
+    }
+
+    if (!variable.regexPattern) {
+        alert('正規表現パターンが設定されていません。編集画面から設定してください。');
+        return;
+    }
+
+    try {
+        const regex = new RegExp(variable.regexPattern, 'g');
+        const replacement = variable.regexReplacement || '';
+        const newValue = variable.value.replace(regex, replacement);
+
+        if (newValue !== variable.value) {
+            variable.value = newValue;
+            saveData();
+            renderVariables();
+            // 小さな通知を出しても良いが、値が変わるのが見えるのでOK
+        } else {
+            alert('正規表現に一致する箇所がありませんでした（値は変更されませんでした）');
+        }
+    } catch (e) {
+        alert('正規表現エラー: ' + e.message);
+    }
+}
+
 function updateVariableValue(variableId, newValue) {
     const variable = variables.find(v => v.id === variableId);
     if (variable) {
@@ -323,6 +387,8 @@ function openVariableDialog(variableId = null) {
                 document.getElementById('variable-attribute-name').value = '';
                 document.getElementById('attribute-group').style.display = 'none';
             }
+            document.getElementById('variable-regex').value = variable.regexPattern || '';
+            document.getElementById('variable-regex-replacement').value = variable.regexReplacement || '';
         }
     } else {
         document.getElementById('variable-name').value = '';
@@ -333,6 +399,8 @@ function openVariableDialog(variableId = null) {
         document.getElementById('variable-extract-type').value = 'text';
         document.getElementById('variable-attribute-name').value = '';
         document.getElementById('attribute-group').style.display = 'none';
+        document.getElementById('variable-regex').value = '';
+        document.getElementById('variable-regex-replacement').value = '';
     }
 
     variableDialog.classList.add('active');
@@ -351,6 +419,8 @@ function saveVariable() {
     const specificityLevel = parseInt(document.getElementById('variable-specificity').value) || 1;
     const extractType = document.getElementById('variable-extract-type').value;
     const attributeName = document.getElementById('variable-attribute-name').value.trim();
+    const regexPattern = document.getElementById('variable-regex').value; // 空欄許容のためtrimしない方が良いかもだが、パターンなので通常はスペース含むなら意図的
+    const regexReplacement = document.getElementById('variable-regex-replacement').value;
 
     if (!name) {
         alert('変数名は必須です');
@@ -367,6 +437,8 @@ function saveVariable() {
             variable.pasteSpecificityLevel = parseInt(document.getElementById('variable-paste-specificity').value) || 1;
             variable.extractType = extractType;
             variable.attributeName = extractType === 'attribute' ? attributeName : null;
+            variable.regexPattern = regexPattern;
+            variable.regexReplacement = regexReplacement;
         }
     } else {
         const newVariable = {
@@ -378,6 +450,8 @@ function saveVariable() {
             pasteSpecificityLevel: parseInt(document.getElementById('variable-paste-specificity').value) || 1,
             extractType: extractType,
             attributeName: extractType === 'attribute' ? attributeName : null,
+            regexPattern: regexPattern,
+            regexReplacement: regexReplacement,
             value: '',
             lastExtracted: null,
             sourceUrl: ''

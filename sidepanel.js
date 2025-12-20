@@ -37,6 +37,11 @@ function setupEventListeners() {
         pasteAllVariables();
     });
 
+    // 一括変換ボタン
+    document.getElementById('btn-transform-all').addEventListener('click', () => {
+        transformAllVariables();
+    });
+
     // 変数セット保存ボタン
     document.getElementById('btn-save-set').addEventListener('click', () => {
         openSetDialog();
